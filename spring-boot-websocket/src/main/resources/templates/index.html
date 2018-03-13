@@ -1,96 +1,101 @@
-<!DOCTYPE HTML>  
+<!DOCTYPE html>
 <html>
-<meta charset="UTF-8"/>
-<head>  
-<title>My WebSocket</title>  
-   
-<style>  
-       #message{  
-              margin-top:40px;  
-              border:1px solid gray;  
-              padding:20px;  
-       }  
-</style>  
-   
-</head>  
-   
-<body>  
-   
-        
-      昵称：<input id="nickname"/> <button onclick="conectWebSocket()">连接WebSocket</button>  
-       <button onclick="closeWebSocket()">断开连接</button>  
-       <hr />  
-        
-        
-       <br />  
-       消息：<input id="text" type="text" />  
-       <button onclick="send()">发送消息</button>  
-       <div id="message"></div>  
-</body>  
-   
-<script type="text/javascript">  
-       var websocket = null;  
-   
-       function conectWebSocket(){  
-    	       var nickname=document.getElementById('nickname').value;
-               if(nickname==""){
-            	   alert("请输入昵称");
-            	   return;
-               }
-              //判断当前浏览器是否支持WebSocket  
-              if ('WebSocket'in window) {  
-                     websocket = new WebSocket("ws://localhost:8080/websocket/"+nickname);  
-              } else {  
-                     alert('Not support websocket')  
-              }  
-               
-               
-              //连接发生错误的回调方法  
-              websocket.onerror = function() {  
-                     setMessageInnerHTML("error");  
-              };  
-   
-              //连接成功建立的回调方法  
-              websocket.onopen = function(event) {  
-                     setMessageInnerHTML("Loc MSG: 成功建立连接");  
-              }  
-   
-              //接收到消息的回调方法  
-              websocket.onmessage = function(event) {  
-            	  debugger
-                     setMessageInnerHTML(event.data);  
-              }  
-   
-              //连接关闭的回调方法  
-              websocket.onclose = function() {  
-                     setMessageInnerHTML("Loc MSG:关闭连接");  
-              }  
-               
-              //监听窗口关闭事件，当窗口关闭时，主动去关闭websocket连接，防止连接还没断开就关闭窗口，server端会抛异常。  
-              window.onbeforeunload = function() {  
-                     websocket.close();  
-              }  
-       }  
-        
-   
-        
-   
-       //将消息显示在网页上  
-       function setMessageInnerHTML(innerHTML) { 
-    	   debugger
-              document.getElementById('message').innerHTML += innerHTML + '<br/>';  
-       }  
-   
-       //关闭连接  
-       function closeWebSocket() {  
-              websocket.close();  
-       }  
-   
-       //发送消息  
-       function send() {  
-    	   debugger
-              var message = document.getElementById('text').value;  
-    	    websocket.send(message);  
-       }  
-</script>  
-</html>  
+<head>
+<meta charset="UTF-8" />
+<title>聊天室</title>
+<style>
+
+	#message{
+		margin-top:20px;
+		border:1px solid gray;
+		padding:20px;
+	}
+</style>
+
+</head>
+<body>
+	
+	昵称：<input type="text" id="nickname" /> 
+	<button onclick="conectWebSocket()">连接WebSocket</button>
+	<button onclick="closeWebSocket()">断开连接</button>
+
+	<br />
+	消息：<input id="text" type="text"  />
+	频道号<input id="toUser" type="text" />
+	<button onclick="send()">发送消息</button>
+	
+	<!-- 存放接收到的消息. -->
+	<div id="message">
+		
+	</div>
+
+
+<script type="text/javascript">
+	
+	//连接对象.
+	var websocket = null;
+	var nickname = null;
+	function conectWebSocket(){
+		nickname = document.getElementById("nickname").value;
+		if(nickname == ''){
+			alert("请输入昵称");
+			return;
+		}
+		//判断当前的浏览器是否支持websocket.
+		if("WebSocket" in window){
+			websocket = new WebSocket("ws://localhost:8080/websocket/"+nickname);
+		}else{
+			alert("Not support websocket");
+			return false;
+		}
+		
+		//连接成功的方法.
+		websocket.onopen = function(event){
+			setMessgeHtml("Loc MSG:连接成功");
+		}
+		
+		//连接关闭.
+		websocket.onclose = function(event){
+			setMessgeHtml("Loc MSG:连接关闭");
+		}
+		
+		//连接异常.
+		websocket.onerror = function(event){
+			setMessgeHtml("Loc MSG:连接异常");
+		}
+		
+		
+		websocket.onmessage = function(event){
+			setMessgeHtml(event.data);
+		}
+		
+	}
+	
+	
+	function setMessgeHtml(msg){
+		var message = document.getElementById("message");
+		message.innerHTML += msg+"<br/>";
+	}
+	
+	/**
+		发送消息.
+	*/
+	function send(){
+		var message = document.getElementById("text").value;
+		var toUser = document.getElementById("toUser").value;
+		var socketMsg = {msg:message,toUser:toUser};
+		if(toUser == ''){
+			socketMsg.type =0;//群聊.
+		}else{
+			socketMsg.type =1;//单聊.
+		}
+		
+		//websocket.send(nickname+":"+message);
+		websocket.send(JSON.stringify(socketMsg));//将json对象转换为json字符串.
+	}
+	
+	
+</script>
+
+</body>
+</html>
